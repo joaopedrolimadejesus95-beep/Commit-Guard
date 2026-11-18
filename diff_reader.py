@@ -20,19 +20,37 @@ def rodar_git(repo_path, args):
     return result.stdout
 
 
-def get_last_commit_diff(repo_path):
-    """Diff completo do último commit (HEAD~1 -> HEAD)."""
-    return rodar_git(repo_path, ["diff", "HEAD~1", "HEAD"])
+EMPTY_TREE_HASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
-def get_changed_files(repo_path):
-    """Lista só os nomes dos arquivos alterados no último commit."""
-    saida = rodar_git(repo_path, ["diff", "--name-only", "HEAD~1", "HEAD"])
-    return saida.splitlines()
+def resolver_base_ref(repo_path, base_ref):
+    """Resolve a referência base; se não existir (ex: primeiro commit), usa a árvore vazia."""
+    if not base_ref or set(base_ref) == {"0"}:
+        return EMPTY_TREE_HASH
+    try:
+        rodar_git(repo_path, ["rev-parse", "--verify", base_ref])
+        return base_ref
+    except RuntimeError:
+        return EMPTY_TREE_HASH
 
-def get_diff_for_file(repo_path, file_path):
-    """Diff de um arquivo específico no último commit."""
-    return rodar_git(repo_path, ["diff", "HEAD~1", "HEAD", "--", file_path])
+
+def get_last_commit_diff(repo_path, base_ref="HEAD~1", head_ref="HEAD"):
+    """Diff completo entre base_ref e head_ref (padrão: HEAD~1 -> HEAD)."""
+    base = resolver_base_ref(repo_path, base_ref)
+    return rodar_git(repo_path, ["diff", base, head_ref])
+
+
+def get_changed_files(repo_path, base_ref="HEAD~1", head_ref="HEAD"):
+    """Lista os nomes dos arquivos alterados entre base_ref e head_ref."""
+    base = resolver_base_ref(repo_path, base_ref)
+    saida = rodar_git(repo_path, ["diff", "--name-only", base, head_ref])
+    return [linha for linha in saida.splitlines() if linha.strip()]
+
+
+def get_diff_for_file(repo_path, file_path, base_ref="HEAD~1", head_ref="HEAD"):
+    """Diff de um arquivo específico entre base_ref e head_ref."""
+    base = resolver_base_ref(repo_path, base_ref)
+    return rodar_git(repo_path, ["diff", base, head_ref, "--", file_path])
 
 
 if __name__ == "__main__":

@@ -1,12 +1,28 @@
 import os
 import json
+import threading
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 load_dotenv()
 
-client = genai.Client()
+_client = None
+_client_lock = threading.Lock()
+
+
+def _get_client():
+    """Inicializa o cliente Gemini sob demanda de forma thread-safe."""
+    global _client
+    if _client is None:
+        with _client_lock:
+            if _client is None:
+                if not os.getenv("GEMINI_API_KEY"):
+                    raise RuntimeError(
+                        "GEMINI_API_KEY não configurada. Defina a variável de ambiente ou adicione ao arquivo .env."
+                    )
+                _client = genai.Client()
+    return _client
 
 def analisar_diff_com_gemini(diff_texto, nome_arquivo):
     
@@ -42,7 +58,7 @@ Se o código estiver limpo em relação a esses pontos, retorne um array vazio""
     print(f"Analisando: {nome_arquivo}...", flush=True)
     
     try:
-        response = client.models.generate_content(
+        response = _get_client().models.generate_content(
             model='gemini-3.5-flash-lite',
             contents=f"Aqui está o diff do arquivo {nome_arquivo}:\n\n{diff_texto}",
             config=types.GenerateContentConfig(
