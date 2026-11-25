@@ -49,13 +49,48 @@ Opções disponíveis na CLI:
 
 ---
 
-## 🤖 Automação com GitHub Actions
+## 🤖 Usando em qualquer repositório (GitHub Action reutilizável)
 
-O projeto já inclui o workflow [`.github/workflows/commit-guard.yml`](.github/workflows/commit-guard.yml) que roda automaticamente em **Pull Requests** e **pushes** na `main`/`master`:
+Você pode usar o CommitGuard em **qualquer outro repositório** sem copiar os scripts Python. Basta criar `.github/workflows/commit-guard.yml` no repositório desejado:
 
-1. No seu repositório do GitHub, acesse **Settings → Secrets and variables → Actions**.
-2. Crie um novo secret chamado `GEMINI_API_KEY` com a sua chave da API do Google Gemini.
-3. A cada Pull Request aberto ou atualizado, o CommitGuard analisa o diff, publica o relatório no **Summary** da Action, comenta (ou atualiza o comentário) diretamente no PR e bloqueia o merge caso encontre problemas de severidade **Alta**.
+```yaml
+name: CommitGuard Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  commit-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: joaopedrolimadejesus95-beep/Commit-Guard@main
+        with:
+          gemini-api-key: ${{ secrets.GEMINI_API_KEY }}
+          fail-on: alta
+```
+
+### Inputs disponíveis na Action
+| Input | Obrigatório | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `gemini-api-key` | Sim | — | Chave da API do Google Gemini (`secrets.GEMINI_API_KEY`) |
+| `fail-on` | Não | `alta` | Severidade mínima para falhar o job (`none`, `baixa`, `media`, `alta`) |
+| `comment-pr` | Não | `true` | Publica/atualiza o relatório como comentário no Pull Request |
+| `repo` | Não | `.` | Caminho do repositório Git a analisar |
+| `base` / `head` | Não | Automático | Refs base e alvo (detectadas automaticamente em `pull_request` e `push`) |
+| `output` | Não | `relatorio_commitguard.md` | Caminho do relatório Markdown gerado |
+
+### Configuração do Secret
+1. No repositório onde vai usar a Action, acesse **Settings → Secrets and variables → Actions**.
+2. Crie um secret chamado `GEMINI_API_KEY` com a sua chave da API do Google Gemini.
 
 ---
 
@@ -66,5 +101,6 @@ O projeto já inclui o workflow [`.github/workflows/commit-guard.yml`](.github/w
 - [x] Passagem do caminho do repositório via linha de comando (CLI)
 - [x] Exportação de relatórios em Markdown
 - [x] Integração com GitHub Actions para rodar em Pull Requests
+- [x] GitHub Action reutilizável (`action.yml`) para uso em outros repositórios
 - [ ] Análise em lote (enviar múltiplos diffs em uma única requisição para otimizar cota)
 - [ ] Integração com **Git Hooks** (`pre-commit` / `pre-push`) para bloquear commits críticos automaticamente
