@@ -94,6 +94,17 @@ jobs:
 
 ---
 
+## 🧪 Testes
+
+Para rodar a suíte de testes unitários localmente (não consome cota da API do Gemini):
+
+```bash
+pip install -r requirements-dev.txt
+pytest -v
+```
+
+---
+
 ## 🗺️ Roadmap (Próximas evoluções)
 
 - [x] Extração automática de `git diff` por arquivo e filtro por extensão
@@ -102,5 +113,6 @@ jobs:
 - [x] Exportação de relatórios em Markdown
 - [x] Integração com GitHub Actions para rodar em Pull Requests
 - [x] GitHub Action reutilizável (`action.yml`) para uso em outros repositórios
+- [x] Testes automatizados com `pytest`
 - [ ] Análise em lote (enviar múltiplos diffs em uma única requisição para otimizar cota)
 - [ ] Integração com **Git Hooks** (`pre-commit` / `pre-push`) para bloquear commits críticos automaticamente
